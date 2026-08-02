@@ -39,9 +39,28 @@ int main(int argc, char** argv){
         return -1;
     }
     else{
-        printf("Please enter the FEN after the command\n");
-        return -1;
+        printf("FEN not provided, using the default FEN\n");
+        //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+        char* pieces = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+        char color = 'w';
+        char* castling = "KQkq";
+        char* en_passant = "-";
+        int half_move = 1;
+        int full_move = 0;
+        memcpy(fen.pieces, pieces, strlen(pieces));
+        fen.active_color = color;
+        memcpy(fen.castling, castling, strlen(castling));
+        memcpy(fen.en_passant, en_passant, strlen(en_passant));
+        fen.half_move = half_move;
+        fen.full_move = full_move;
     }
 
     Board board;
+    for(int i = 0; i < 64; i++){
+        board.mailbox[i] = '.';
+    }
+    for(int i = 0; i < TYPES; i++){
+        board.bitboard[i] = 0;
+    }
+    fen_to_board(&fen, &board);
 }
