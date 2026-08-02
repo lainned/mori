@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "board.h"
 #include "fen.h"
 
 int main(int argc, char** argv){
@@ -38,7 +39,9 @@ int main(int argc, char** argv){
         return -1;
     }
     else{
-        scanf("%s", fen);
+        printf("Please enter the FEN after the command\n");
+        return -1;
     }
 
+    Board board;
 }
