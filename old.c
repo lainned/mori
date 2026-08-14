@@ -7,6 +7,8 @@ int bking_index = 60;
 
 int is_check(int white, const char* board);
 
+
+
 void print_board(const char* board){
     for(int i = 7; i >= 0; i--){
         if(i != 7) putchar('\n');

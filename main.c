@@ -1,8 +1,23 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "board.h"
 #include "fen.h"
+#include "gen.h"
+
+
+void bitboard_print(uint64_t bitboard){
+    for(int i = 7; i >= 0; i--){
+        for(int j = 0; j <= 7; j++){
+            char c = ((bitboard >> (i*8+j)) & 1)+'0';
+            if(c == '0') c = '.';
+            printf("%c ", c);
+        }
+        putchar('\n');
+    }
+}
+
 
 int main(int argc, char** argv){
     FEN fen;
@@ -63,4 +78,7 @@ int main(int argc, char** argv){
         board.bitboard[i] = 0;
     }
     fen_to_board(&fen, &board);
+    Move moves[MAX_MOVE_COUNT];
+    int8_t len = 0;
+    generate_legal_moves(board, &moves, &len);
 }

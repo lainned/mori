@@ -4,7 +4,7 @@
 
 #define TYPES 15
 
-enum Type {
+typedef enum Type {
     WHITE_PAWNS = 0,
     WHITE_ROOKS,
     WHITE_KNIGHTS,
@@ -20,7 +20,7 @@ enum Type {
     WHITE,
     BLACK,
     BOTH
-};
+} Type;
 
 typedef struct {
     char mailbox[64];
