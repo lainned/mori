@@ -26,21 +26,30 @@
 #define CASTLING_NONE 0
 #define CASTLING_KING_SIDE 1
 #define CASTLING_QUEEN_SIDE 2
+#define PROMOTION_NONE 0
+#define PROMOTION_KNIGHT 1
+#define PROMOTION_BISHOP 2
+#define PROMOTION_ROOK 3
+#define PROMOTION_QUEEN 4
 
-#define MAX_MOVE_COUNT 218
+#define MAX_MOVE_COUNT 256
 
 extern uint64_t king_move_board[BOARD_SIZE];
 extern uint64_t knight_move_board[BOARD_SIZE];
-
+extern uint64_t pawn_attack_board[2][BOARD_SIZE];
 typedef struct {
-    uint8_t from;
-    uint8_t to;
-    uint8_t legality; // LEGAL, ILLEGAL O NON_VALIDATED
-    uint8_t castling; // CASTLING_NONE, CASTLING_KING_SIDE OR CASTLING_QUEEN_SIDE
+    uint16_t from;
+    uint16_t to;
+    uint16_t legality; // LEGAL, ILLEGAL O NON_VALIDATED
+    uint16_t castling; // CASTLING_NONE, CASTLING_KING_SIDE OR CASTLING_QUEEN_SIDE
+    uint16_t promotion; // PROMOTION_NONE,PROMOTION_KNIGHT, PROMOTION_BISHOP, PROMOTION_ROOK, PROMOTION_QUEEN
     char piece; // piece type, lower case is black, upper case is white
 } Move;
 
 void init_king(void);
 void init_knight(void);
-void generate_legal_moves(const Board board, Move* moves, uint8_t* len);
-bool is_square_attacked(const Board board, uint8_t square);
+void init_pawns(void);
+void init_bishops(void);
+void init_rooks(void);
+void generate_legal_moves(const Board board, Move* moves, uint16_t* len);
+bool is_square_attacked(const Board board, uint16_t square);

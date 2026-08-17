@@ -56,8 +56,9 @@ int main(int argc, char** argv){
     else{
         printf("FEN not provided, using the default FEN\n");
         //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-        char* pieces = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-        char color = 'w';
+        char* pieces = "rnbqkbnr/pppppppp/1P6/8/8/8/P1PPPPPP/RNBQKBNR";
+        //char* kings = "8/2k5/8/8/8/3K4/8/8";
+        char color = 'b';
         char* castling = "KQkq";
         char* en_passant = "-";
         int half_move = 1;
@@ -79,6 +80,14 @@ int main(int argc, char** argv){
     }
     fen_to_board(&fen, &board);
     Move moves[MAX_MOVE_COUNT];
-    int8_t len = 0;
-    generate_legal_moves(board, &moves, &len);
+    uint16_t len = 0;
+    init_king();
+    init_knight();
+    init_pawns();
+    generate_legal_moves(board, moves, &len);
+    for(int i = 0; i < len; i++){
+        printf("Move %d: \n", i);
+        printf("From %d to %d\n", moves[i].from, moves[i].to);
+    }
+    
 }

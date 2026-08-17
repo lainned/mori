@@ -10,5 +10,5 @@ typedef struct FEN {
     int full_move;
 } FEN;
 
-void fen_to_board(FEN* fen, Board* board);
+void fen_to_board(FEN* fen, Board* board); 
 void board_to_fen(Board* board, FEN* fen);

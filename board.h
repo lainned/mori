@@ -25,12 +25,12 @@ typedef enum Type {
 typedef struct {
     char mailbox[64];
     uint64_t bitboard[TYPES];
+    uint64_t en_passant;
     bool white_turn;
     bool white_king_castling;
     bool white_queen_castling;
     bool black_king_castling;
     bool black_queen_castling;
-    bool en_passant;
     int full_move;
     int half_move;
 } Board;

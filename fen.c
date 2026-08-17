@@ -19,6 +19,7 @@ void fen_to_board(FEN* fen, Board* board){
         }
         if(j == 8) j = 0;
         int pos = i * 8 + j++;
+        if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) board->mailbox[pos] = c;
         switch(c){
             case 'p':
                 board->bitboard[BLACK_PAWNS] |= (1ULL << pos);
