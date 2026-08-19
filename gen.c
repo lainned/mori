@@ -10,7 +10,7 @@ uint64_t pawn_attack_board[2][BOARD_SIZE];
 
 uint64_t rook_attack_boards[64][8192];
 uint64_t bishop_attack_board[64][1024];
-
+ 
 int ROOK_RELEVANT_BITS[64] = {
     12, 11, 11, 11, 11, 11, 11, 12,
     11, 10, 10, 10, 10, 10, 10, 11,
@@ -34,15 +34,32 @@ int BISHOP_RELEVANT_BITS[64] = {
 
 // magics
 
-void 
 
-uint64_t get_bishop_attacks(int square, uint64_t blockers){
-    
+
+void init_rook_attack_table(void){
+    for(int square = 0; square < 1; square++){
+        uint64_t move_board = rook_move_board[square];
+        
+        int relevant_bits = ROOK_RELEVANT_BITS[square];
+        int variations = (1 << relevant_bits);
+        // we iterate through all blockers variations
+        for(int i = 0; i < variations; i++){
+            uint64_t blockers = 0;
+            uint64_t temp_board = move_board;
+            for(int bit = 0; bit < relevant_bits; bit++){
+                // we get the lsb and zero it 
+                int sq = __builtin_ctzll(temp_board);
+                temp_board &= ~(1ULL << sq);
+                // if that bit was 1 in this variation we set it as a blocker
+                if(i & (1 << bit)){
+                    blockers |= (1ULL << sq);
+                }
+            }
+        }
+        
+    }
 }
 
-uint64_t get_rook_attacks(int square, uint64_t blockers){
-
-}
 
 void init_king(void){
     for(int i = 0; i < BOARD_SIZE; i++){
@@ -115,11 +132,19 @@ void init_rooks(void){
         for(int r = 0; r <= 7; r++) board |= (1ULL << (r * 8 + file));
         for(int f = 0; f <= 7; f++) board |= (1ULL << (rank * 8 + f));
         board &= (1ULL << i);
+        rook_move_board[i] = board;
     }
 }
 
 
-
+void init(void){
+    init_king();
+    init_knight();
+    init_bishops();
+    init_rooks();
+    init_pawns();
+    init_rook_attack_table();
+}
 bool is_square_attacked(const Board board, uint16_t square){
 
 }

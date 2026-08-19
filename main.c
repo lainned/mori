@@ -81,9 +81,7 @@ int main(int argc, char** argv){
     fen_to_board(&fen, &board);
     Move moves[MAX_MOVE_COUNT];
     uint16_t len = 0;
-    init_king();
-    init_knight();
-    init_pawns();
+    gen_init();
     generate_legal_moves(board, moves, &len);
     for(int i = 0; i < len; i++){
         printf("Move %d: \n", i);

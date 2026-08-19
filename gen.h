@@ -46,10 +46,6 @@ typedef struct {
     char piece; // piece type, lower case is black, upper case is white
 } Move;
 
-void init_king(void);
-void init_knight(void);
-void init_pawns(void);
-void init_bishops(void);
-void init_rooks(void);
+void gen_init(void);
 void generate_legal_moves(const Board board, Move* moves, uint16_t* len);
 bool is_square_attacked(const Board board, uint16_t square);
