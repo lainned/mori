@@ -36,7 +36,10 @@
 
 extern uint64_t king_move_board[BOARD_SIZE];
 extern uint64_t knight_move_board[BOARD_SIZE];
+extern uint64_t rook_move_board[BOARD_SIZE];
 extern uint64_t pawn_attack_board[2][BOARD_SIZE];
+extern uint64_t rook_attack_boards[64][4096];
+extern uint64_t bishop_attack_boards[64][512];
 typedef struct {
     uint16_t from;
     uint16_t to;

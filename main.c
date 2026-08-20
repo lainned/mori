@@ -5,18 +5,7 @@
 #include "board.h"
 #include "fen.h"
 #include "gen.h"
-
-
-void bitboard_print(uint64_t bitboard){
-    for(int i = 7; i >= 0; i--){
-        for(int j = 0; j <= 7; j++){
-            char c = ((bitboard >> (i*8+j)) & 1)+'0';
-            if(c == '0') c = '.';
-            printf("%c ", c);
-        }
-        putchar('\n');
-    }
-}
+#include "helpers.h"
 
 
 int main(int argc, char** argv){
@@ -56,7 +45,7 @@ int main(int argc, char** argv){
     else{
         printf("FEN not provided, using the default FEN\n");
         //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-        char* pieces = "rnbqkbnr/pppppppp/1P6/8/8/8/P1PPPPPP/RNBQKBNR";
+        char* pieces = "1k6/3q4/8/8/8/1N1r1n2/8/1K1P4";
         //char* kings = "8/2k5/8/8/8/3K4/8/8";
         char color = 'b';
         char* castling = "KQkq";
@@ -83,9 +72,10 @@ int main(int argc, char** argv){
     uint16_t len = 0;
     gen_init();
     generate_legal_moves(board, moves, &len);
-    for(int i = 0; i < len; i++){
-        printf("Move %d: \n", i);
-        printf("From %d to %d\n", moves[i].from, moves[i].to);
-    }
+    // for(int i = 0; i < len; i++){
+    //     printf("Move %d: \n", i);
+    //     printf("From %d to %d\n", moves[i].from, moves[i].to);
+    // }
+
     
 }
