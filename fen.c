@@ -19,7 +19,7 @@ void fen_to_board(FEN* fen, Board* board){
         }
         if(j == 8) j = 0;
         int pos = i * 8 + j++;
-        if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) board->mailbox[pos] = c;
+        //if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) board->mailbox[pos] = c;
         switch(c){
             case 'p':
                 board->bitboard[BLACK_PAWNS] |= (1ULL << pos);
@@ -84,6 +84,7 @@ void fen_to_board(FEN* fen, Board* board){
     idx = 0;
     while(fen->castling[idx] != '\0' && idx < 4){
         c = fen->castling[idx];
+        if(c == '-') break;
         switch(c){
             case 'K':
                 board->white_king_castling = true;
@@ -92,10 +93,10 @@ void fen_to_board(FEN* fen, Board* board){
                 board->white_queen_castling = true;
                 break;
             case 'k':
-                board->white_king_castling = true;
+                board->black_king_castling = true;
                 break;
             case 'q':
-                board->white_queen_castling = true;
+                board->black_queen_castling = true;
                 break;
             default:
                 printf("Error when parsing FEN\n");

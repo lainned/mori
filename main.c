@@ -7,6 +7,34 @@
 #include "gen.h"
 #include "helpers.h"
 
+int compare(const void* a, const void* b){
+    if(((Move*)a)->from == ((Move*)b)->from) return ((Move*)a)->to > ((Move*)b)->to;
+    return ((Move*)a)->from > ((Move*)b)->from;
+}
+
+uint64_t perft(Board* board, int depth, int max_depth){
+    Move moves[MAX_MOVE_COUNT];
+    uint16_t len = 0;
+    generate_legal_moves(*board, moves, &len);
+    uint64_t nodes = 0;
+    if(depth == 1){
+        for(int i = 0; i < len; i++){
+            printf("%s%s: 1\n", number_to_pos[moves[i].from], number_to_pos[moves[i].to]);
+            
+        }
+        return len;
+    }
+    for(int i = 0; i < len; i++){
+        Board copy = *board;
+        make_move(&copy, moves[i]);
+        copy.white_turn = !copy.white_turn;
+        uint64_t res = perft(&copy, depth - 1, max_depth);
+        nodes += res;
+        if(depth == max_depth)
+        printf("%s%s: %d\n", number_to_pos[moves[i].from], number_to_pos[moves[i].to], res);
+    }
+    return nodes;
+}
 
 int main(int argc, char** argv){
     FEN fen;
@@ -45,13 +73,13 @@ int main(int argc, char** argv){
     else{
         printf("FEN not provided, using the default FEN\n");
         //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-        char* pieces = "1k6/3q4/8/8/8/1N1r1n2/8/1K1P4";
+        char* pieces = "r3k2r/p1ppqpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPBbPPP/1R2K2R";
         //char* kings = "8/2k5/8/8/8/3K4/8/8";
-        char color = 'b';
-        char* castling = "KQkq";
+        char color = 'w';
+        char* castling = "Kkq";
         char* en_passant = "-";
-        int half_move = 1;
-        int full_move = 0;
+        int half_move = 0;
+        int full_move = 1;
         memcpy(fen.pieces, pieces, strlen(pieces));
         fen.active_color = color;
         memcpy(fen.castling, castling, strlen(castling));
@@ -61,21 +89,18 @@ int main(int argc, char** argv){
     }
 
     Board board;
-    for(int i = 0; i < 64; i++){
-        board.mailbox[i] = '.';
-    }
+    // for(int i = 0; i < 64; i++){
+    //     board.mailbox[i] = '.';
+    // }
     for(int i = 0; i < TYPES; i++){
         board.bitboard[i] = 0;
     }
-    fen_to_board(&fen, &board);
-    Move moves[MAX_MOVE_COUNT];
-    uint16_t len = 0;
     gen_init();
-    generate_legal_moves(board, moves, &len);
-    // for(int i = 0; i < len; i++){
-    //     printf("Move %d: \n", i);
-    //     printf("From %d to %d\n", moves[i].from, moves[i].to);
-    // }
+    fen_to_board(&fen, &board);
+    int depth = 1;
+    scanf("%d", &depth);
+    uint64_t perft_result = perft(&board, depth, depth);
+    printf("Perft depth %d result nodes: %llu", depth, (unsigned long long)perft_result);
 
     
 }

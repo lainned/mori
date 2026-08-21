@@ -51,4 +51,5 @@ typedef struct {
 
 void gen_init(void);
 void generate_legal_moves(const Board board, Move* moves, uint16_t* len);
-bool is_square_attacked(const Board board, uint16_t square);
+void make_move(Board* board, Move move);
+void undo_move(Board* board, Move move);

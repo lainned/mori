@@ -126,6 +126,7 @@ uint64_t generate_bishop_blocked_attacks(int square, uint64_t blockers){
     return board;
 }
 
+// INITS
 
 void init_magic_attack_table(bool rook){
     for(int square = 0; square < 64; square++){
@@ -263,6 +264,17 @@ void gen_init(void){
 }
 
 
+// pseudo legal move generators
+
+uint64_t get_bishop_moves(const Board board, int square){
+    uint64_t key = ((bishop_move_board[square] & board.bitboard[BOTH]) * bishop_magics[square]) >> (64 - bishop_relevant_bits[square]);
+    return (bishop_attack_boards[square][key] & (~board.bitboard[board.white_turn ? WHITE : BLACK]));
+}
+uint64_t get_rook_moves(const Board board, int square){
+    uint64_t key = ((rook_move_board[square] & board.bitboard[BOTH]) * rook_magics[square]) >> (64 - rook_relevant_bits[square]);
+    return (rook_attack_boards[square][key] & (~board.bitboard[board.white_turn ? WHITE : BLACK]));
+}
+
 void generate_king_moves(const Board board, Move moves[], uint16_t* len){
     uint64_t king_board = board.white_turn ? board.bitboard[WHITE_KINGS] : board.bitboard[BLACK_KINGS];
     Type color = board.white_turn ? WHITE : BLACK;
@@ -338,7 +350,7 @@ void generate_pawn_moves(const Board board, Move* moves, uint16_t* len){
         else after >>= 8;
         after &= (~(board.bitboard[BOTH]));
 
-
+        all |= after;
         // attack 
         after=0;
         // [0] is white array, [1] is black
@@ -354,14 +366,16 @@ void generate_pawn_moves(const Board board, Move* moves, uint16_t* len){
             uint16_t to = __builtin_ctzll(all);
             Move new_move = {square, to, NOT_VALIDATED, CASTLING_NONE, PROMOTION_NONE, board.white_turn ? 'P' : 'p'};
             bool is_promoting = (white ? (1ULL << to) & RANK_8 : (1ULL << to) & RANK_1);
-            moves[(*len)] = new_move;
-            (*len)++;
             if(is_promoting){
                 for(int i = 1; i <= 4; i++){
                     new_move.promotion = i;
                     moves[(*len)] = new_move;
                     (*len)++;
                 }
+            }
+            else{
+                moves[(*len)] = new_move;
+                (*len)++;
             }
             all &= (all - 1);
         }
@@ -376,12 +390,9 @@ void generate_rook_moves(const Board board, Move* moves, uint16_t* len){
 
     while(rook_board){
         int sq = __builtin_ctzll(rook_board);
-        uint64_t blockers = rook_move_board[sq] & all_pieces;
+       
+        uint64_t move_board = get_rook_moves(board, sq);
 
-        uint64_t key = (blockers * rook_magics[sq]) >> (64 - rook_relevant_bits[sq]);
-        uint64_t move_board = rook_attack_boards[sq][key];
-        move_board &= ~(own_pieces);
-        bitboard_print(move_board);
         while(move_board){
             int to = __builtin_ctzll(move_board);
             Move new_move = {sq, to, NOT_VALIDATED, CASTLING_NONE, PROMOTION_NONE, board.white_turn ? 'R' : 'r'};
@@ -401,12 +412,8 @@ void generate_bishop_moves(const Board board, Move* moves, uint16_t* len){
 
     while(bishop_board){
         int sq = __builtin_ctzll(bishop_board);
-        uint64_t blockers = bishop_move_board[sq] & all_pieces;
+        uint64_t move_board = get_bishop_moves(board, sq);
 
-        uint64_t key = (blockers * bishop_magics[sq]) >> (64 - bishop_relevant_bits[sq]);
-        uint64_t move_board = bishop_attack_boards[sq][key];
-        move_board &= ~(own_pieces);
-        bitboard_print(move_board);
         while(move_board){
             int to = __builtin_ctzll(move_board);
             Move new_move = {sq, to, NOT_VALIDATED, CASTLING_NONE, PROMOTION_NONE, board.white_turn ? 'B' : 'b'};
@@ -450,11 +457,280 @@ void generate_queen_moves(const Board board, Move* moves, uint16_t* len){
     }
 }
 
-bool is_square_attacked(const Board board, uint16_t square){
-    
+void generate_castling_moves(const Board board, Move* moves, uint16_t* len){
+    if(board.white_turn){
+        if(board.white_king_castling){
+            uint64_t king = (1ULL << 4);
+            if(!(((king << 1) & board.bitboard[BOTH]) && ((king << 2) & board.bitboard[BOTH])) && (board.bitboard[WHITE_ROOKS] & (1ULL << 7))){
+                Move new_move = {4, 6, NOT_VALIDATED, CASTLING_KING_SIDE, PROMOTION_NONE, 'K'};
+                moves[(*len)] = new_move;
+                (*len)++;
+            }
+        }
+        if(board.white_queen_castling){
+            uint64_t king = (1ULL << 4);
+            if(!(((king >> 1) & board.bitboard[BOTH]) && ((king >> 2) & board.bitboard[BOTH]) && (((king >> 3) & board.bitboard[BOTH]))) && (board.bitboard[WHITE_ROOKS] & (1ULL))){
+                Move new_move = {4, 2, NOT_VALIDATED, CASTLING_QUEEN_SIDE, PROMOTION_NONE, 'K'};
+                moves[(*len)] = new_move;
+                (*len)++;
+            }
+        }
+    }
+    else{
+        if(board.black_king_castling){
+            uint64_t king = (1ULL << 60);
+            if(!(((king << 1) & board.bitboard[BOTH]) && ((king << 2) & board.bitboard[BOTH])) && (board.bitboard[BLACK_ROOKS] & (1ULL << 63))){
+                Move new_move = {60, 62, NOT_VALIDATED, CASTLING_KING_SIDE, PROMOTION_NONE, 'k'};
+                moves[(*len)] = new_move;
+                (*len)++;
+            }
+        }
+        if(board.black_queen_castling){
+            uint64_t king = (1ULL << 60);
+            if(!(((king >> 1) & board.bitboard[BOTH]) && ((king >> 2) & board.bitboard[BOTH]) && (((king >> 3) & board.bitboard[BOTH]))) && (board.bitboard[BLACK_ROOKS] & (1ULL << 56))){
+                Move new_move = {60, 2, NOT_VALIDATED, CASTLING_QUEEN_SIDE, PROMOTION_NONE, 'k'};
+                moves[(*len)] = new_move;
+                (*len)++;
+            }
+        }
+    }
 }
 
-void generate_legal_moves(const Board board, Move* moves, uint16_t* len){
+bool is_square_attacked(Board board, int sq){
+    // attacking pieces
+    uint64_t king = board.white_turn ? board.bitboard[BLACK_KINGS] : board.bitboard[WHITE_KINGS];
+    uint64_t knights = board.white_turn ? board.bitboard[BLACK_KNIGHTS] : board.bitboard[WHITE_KNIGHTS];
+    uint64_t bishops = board.white_turn ? board.bitboard[BLACK_BISHOPS] : board.bitboard[WHITE_BISHOPS];
+    uint64_t rooks = board.white_turn ? board.bitboard[BLACK_ROOKS] : board.bitboard[WHITE_ROOKS];
+    uint64_t queens = board.white_turn ? board.bitboard[BLACK_QUEENS] : board.bitboard[WHITE_QUEENS];
+    uint64_t pawns = board.white_turn ? board.bitboard[BLACK_PAWNS] : board.bitboard[WHITE_PAWNS];
+
+    // we assume theres one king
+
+    uint64_t mask = (1ULL << sq);
+
+    board.white_turn = !board.white_turn;
+    while(king){
+        int sq = __builtin_ctzll(king);
+        uint64_t attacks = king_move_board[sq] & (~board.bitboard[BOTH]);
+        if(attacks & mask) return true;
+        king &= (king - 1);
+    }
+    while(knights){
+        int sq = __builtin_ctzll(knights);
+        uint64_t attacks = knight_move_board[sq] & (~board.bitboard[board.white_turn ? WHITE : BLACK]);
+        if(attacks & mask) return true;
+        knights &= (knights - 1);
+    }
+    while(bishops){
+        int sq = __builtin_ctzll(bishops);
+        uint64_t attacks = get_bishop_moves(board, sq);
+        if(attacks & mask) return true;
+        bishops &= (bishops - 1);
+    }
+    while(rooks){
+        int sq = __builtin_ctzll(rooks);
+        uint64_t attacks = get_rook_moves(board, sq);
+        if(attacks & mask) return true;
+        rooks &= (rooks - 1);
+    }
+    while(queens){
+        int sq = __builtin_ctzll(queens);
+        uint64_t attacks = get_rook_moves(board, sq) | get_bishop_moves(board, sq);
+        if(attacks & mask) return true;
+        queens &= (queens - 1);
+    }
+    while(pawns){
+        int sq = __builtin_ctzll(pawns);
+        uint64_t attacks = pawn_attack_board[!board.white_turn][sq];
+        if(attacks & mask) return true;
+        pawns &= (pawns - 1);
+    }
+
+    return false;
+}
+
+
+
+void make_move(Board* board, Move move){
+    if(move.castling == CASTLING_NONE){
+        board->bitboard[BOTH] &= ~(1ULL << move.from);
+        board->bitboard[BOTH] |= (1ULL << move.to);
+
+        if(board->white_turn){
+            board->bitboard[WHITE] &= ~(1ULL << move.from);
+            board->bitboard[WHITE] |= (1ULL << move.to);
+            board->bitboard[BLACK] &= ~(1ULL << move.to);
+
+        }
+        else{
+            board->bitboard[BLACK] &= ~(1ULL << move.from);
+            board->bitboard[BLACK] |= (1ULL << move.to);
+            board->bitboard[WHITE] &= ~(1ULL << move.to);
+        }
+
+        Type type;
+        type = char_to_type(move.piece);
+        Type capture = BOTH;
+        for(int i = 0; i < 6; i++){
+            int pos = i + (board->white_turn ? 6 : 0);
+            if(board->bitboard[pos] & (1ULL << move.to)){
+                capture = pos;
+                break;
+            }
+        }
+        board->bitboard[type] &= ~(1ULL << move.from);
+        board->bitboard[type] |= (1ULL << move.to);
+        // if we capture
+        if(capture != BOTH){
+            board->bitboard[capture] &= ~(1ULL << move.to);
+        }
+        if(move.piece == 'P' || move.piece == 'p'){
+            if(board->en_passant & (1ULL << move.to)){
+                board->bitboard[BOTH] |= (board->en_passant);
+                if(board->white_turn){
+                    board->bitboard[BOTH] &= ~(board->en_passant >> 8);
+                    board->bitboard[BLACK] &= ~(board->en_passant >> 8);
+                    board->bitboard[BLACK_PAWNS] &= ~(board->en_passant >> 8);
+                    board->bitboard[WHITE] |= (board->en_passant);
+                    board->bitboard[WHITE_PAWNS] |= (board->en_passant);
+                }
+                else{
+                    board->bitboard[BOTH] &= ~(board->en_passant << 8);
+                    board->bitboard[WHITE] &= ~(board->en_passant << 8);
+                    board->bitboard[WHITE_PAWNS] &= ~(board->en_passant << 8);
+                    board->bitboard[BLACK] |= (board->en_passant);
+                    board->bitboard[BLACK_PAWNS] |= (board->en_passant);
+                }
+                board->en_passant = 0;
+            }
+            if((move.from + 16 == move.to)){
+                board->en_passant = (1ULL << (move.from + 8));
+            }
+            else if((move.from - 16 == move.to)){
+                board->en_passant = (1ULL << (move.from - 8));
+            }
+            if(move.promotion != PROMOTION_NONE){
+                board->bitboard[type] &= ~(1ULL << move.to);
+                switch(move.promotion){
+                    case PROMOTION_BISHOP:
+                        board->bitboard[board->white_turn ? WHITE_BISHOPS : BLACK_BISHOPS] |= (1ULL << move.to);
+                        break;
+                    case PROMOTION_KNIGHT:
+                        board->bitboard[board->white_turn ? WHITE_KNIGHTS : BLACK_KNIGHTS] |= (1ULL << move.to);
+                        break;
+                    case PROMOTION_ROOK:
+                        board->bitboard[board->white_turn ? WHITE_ROOKS : BLACK_ROOKS] |= (1ULL << move.to);
+                        break;
+                    case PROMOTION_QUEEN:
+                        board->bitboard[board->white_turn ? WHITE_QUEENS : BLACK_QUEENS] |= (1ULL << move.to);
+                        break;
+                }
+            }
+        }
+        else{
+            board->en_passant = 0;
+        }
+    }
+    else{
+        if(board->white_turn){
+            if(move.castling == CASTLING_KING_SIDE){
+                board->bitboard[WHITE] &= ~(1ULL << 4);
+                board->bitboard[WHITE] |= (1ULL << 6);
+                board->bitboard[BOTH] &= ~(1ULL << 4);
+                board->bitboard[BOTH] |= (1ULL << 6);
+                board->bitboard[WHITE_KINGS] <<= 2;
+
+                board->bitboard[WHITE] &=  ~(1ULL << 7);
+                board->bitboard[WHITE] |= (1ULL << 5);
+                board->bitboard[BOTH] &=  ~(1ULL << 7);
+                board->bitboard[BOTH] |= (1ULL << 5);
+                board->bitboard[WHITE_ROOKS] &= ~(1ULL << 7);
+                board->bitboard[WHITE_ROOKS] |= (1ULL << 5);
+            }
+            else if(move.castling == CASTLING_QUEEN_SIDE){
+                board->bitboard[WHITE] &= ~(1ULL << 4);
+                board->bitboard[WHITE] |= (1ULL << 2);
+                board->bitboard[BOTH] &= ~(1ULL << 4);
+                board->bitboard[BOTH] |= (1ULL << 2);
+                board->bitboard[WHITE_KINGS] >>=2;
+
+                board->bitboard[WHITE] &=  ~(1ULL);
+                board->bitboard[WHITE] |= (1ULL << 3);
+                board->bitboard[BOTH] &=  ~(1ULL);
+                board->bitboard[BOTH] |= (1ULL << 3);
+                board->bitboard[WHITE_ROOKS] &= ~(1ULL);
+                board->bitboard[WHITE_ROOKS] |= (1ULL << 3);
+            }
+            board->white_king_castling = false;
+            board->white_queen_castling = false;
+        }
+        else{
+            if(move.castling == CASTLING_KING_SIDE){
+                board->bitboard[BLACK] &= ~(1ULL << 60);
+                board->bitboard[BLACK] |= (1ULL << 62);
+                board->bitboard[BOTH] &= ~(1ULL << 60);
+                board->bitboard[BOTH] |= (1ULL << 62);
+                board->bitboard[BLACK_KINGS] <<= 2;
+
+                board->bitboard[BLACK] &=  ~(1ULL << 63);
+                board->bitboard[BLACK] |= (1ULL << 61);
+                board->bitboard[BOTH] &=  ~(1ULL << 63);
+                board->bitboard[BOTH] |= (1ULL << 61);
+                board->bitboard[BLACK_ROOKS] &= ~(1ULL << 63);
+                board->bitboard[BLACK_ROOKS] |= (1ULL << 61);
+            }
+            else if(move.castling == CASTLING_QUEEN_SIDE){
+                board->bitboard[BLACK] &= ~(1ULL << 60);
+                board->bitboard[BLACK] |= (1ULL << 58);
+                board->bitboard[BOTH] &= ~(1ULL << 60);
+                board->bitboard[BOTH] |= (1ULL << 58);
+                board->bitboard[BLACK_KINGS] >>=2;
+
+                board->bitboard[BLACK] &=  ~(1ULL << 56);
+                board->bitboard[BLACK] |= (1ULL << 59);
+                board->bitboard[BOTH] &=  ~(1ULL << 56);
+                board->bitboard[BOTH] |= (1ULL << 59);
+                board->bitboard[BLACK_ROOKS] &= ~(1ULL << 56);
+                board->bitboard[BLACK_ROOKS] |= (1ULL << 59);
+            }
+        }
+        board->black_king_castling = false;
+        board->black_queen_castling = false;
+    }
+}
+
+bool validate_move(Board board, Move move){
+    // pseudo legal moves are moves that do not capture friendly pieces and do follow movement rules 
+    // they can leave own king in check which is important to verify
+    uint64_t king = board.white_turn ? board.bitboard[WHITE_KINGS] : board.bitboard[BLACK_KINGS];
+    int king_square = __builtin_ctzll(king);
+    if(move.castling != CASTLING_NONE){
+        if(board.white_turn){
+            if(board.white_king_castling && move.castling == CASTLING_KING_SIDE){
+                if(is_square_attacked(board, king_square + 1)) return false;
+            }
+            if(board.white_queen_castling && move.castling == CASTLING_QUEEN_SIDE){
+                if(is_square_attacked(board, king_square - 1)) return false;
+            } 
+        }
+        else{
+            if(board.black_king_castling && move.castling == CASTLING_KING_SIDE){
+                if(is_square_attacked(board, king_square + 1)) return false;
+            }
+            if(board.black_queen_castling && move.castling == CASTLING_QUEEN_SIDE){
+                if(is_square_attacked(board, king_square - 1)) return false;
+            } 
+        }
+    }
+    make_move(&board, move);
+
+    return !is_square_attacked(board, king_square);
+
+}
+
+void generate_legal_moves(const Board board, Move* legal_moves, uint16_t* len){
+    Move moves[256];
     // firstly generate all pseudo legal moves
     generate_pawn_moves(board, moves,len);
     generate_king_moves(board, moves, len);
@@ -462,4 +738,18 @@ void generate_legal_moves(const Board board, Move* moves, uint16_t* len){
     generate_rook_moves(board,moves, len);
     generate_bishop_moves(board, moves, len);
     generate_queen_moves(board, moves, len);
+    generate_castling_moves(board, moves, len);
+
+    uint16_t legal_len = 0;
+    for(int i = 0; i < *len; i++){
+        if(validate_move(board, moves[i])){
+            moves[i].legality = LEGAL;
+            legal_moves[legal_len++] = moves[i];
+        }
+        else{
+            moves[i].legality = ILLEGAL;
+        }
+    }
+    (*len) = legal_len;
+   
 }
